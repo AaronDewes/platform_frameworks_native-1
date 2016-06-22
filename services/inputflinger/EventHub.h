@@ -344,6 +344,9 @@ private:
         uint8_t propBitmask[(INPUT_PROP_MAX + 1) / 8];
 
         std::string configurationFile;
+
+        uint32_t abs_max[ABS_CNT];
+        uint32_t abs_min[ABS_CNT];
         PropertyMap* configuration;
         std::unique_ptr<VirtualKeyMap> virtualKeyMap;
         KeyMap keyMap;

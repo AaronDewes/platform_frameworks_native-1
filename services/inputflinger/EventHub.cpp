@@ -30,6 +30,8 @@
 #include <sys/ioctl.h>
 #include <sys/utsname.h>
 #include <unistd.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 
 #define LOG_TAG "EventHub"
 
@@ -350,27 +352,16 @@ void EventHub::getConfiguration(int32_t deviceId, PropertyMap* outConfiguration)
 status_t EventHub::getAbsoluteAxisInfo(int32_t deviceId, int axis,
         RawAbsoluteAxisInfo* outAxisInfo) const {
     outAxisInfo->clear();
-
     if (axis >= 0 && axis <= ABS_MAX) {
         AutoMutex _l(mLock);
-
         Device* device = getDeviceLocked(deviceId);
         if (device && device->hasValidFd() && test_bit(axis, device->absBitmask)) {
-            struct input_absinfo info;
-            if(ioctl(device->fd, EVIOCGABS(axis), &info)) {
-                ALOGW("Error reading absolute controller %d for device %s fd %d, errno=%d",
-                     axis, device->identifier.name.c_str(), device->fd, errno);
-                return -errno;
-            }
-
-            if (info.minimum != info.maximum) {
-                outAxisInfo->valid = true;
-                outAxisInfo->minValue = info.minimum;
-                outAxisInfo->maxValue = info.maximum;
-                outAxisInfo->flat = info.flat;
-                outAxisInfo->fuzz = info.fuzz;
-                outAxisInfo->resolution = info.resolution;
-            }
+            outAxisInfo->valid = true;
+            outAxisInfo->minValue = info.minimum;
+            outAxisInfo->maxValue = info.maximum;
+            outAxisInfo->flat = info.flat;
+            outAxisInfo->fuzz = info.fuzz;
+            outAxisInfo->resolution = info.resolution;
             return OK;
         }
     }
@@ -402,6 +393,10 @@ bool EventHub::hasInputProperty(int32_t deviceId, int property) const {
 }
 
 int32_t EventHub::getScanCodeState(int32_t deviceId, int32_t scanCode) const {
+    (void) deviceId;
+    (void) scanCode;
+
+#if 0
     if (scanCode >= 0 && scanCode <= KEY_MAX) {
         AutoMutex _l(mLock);
 
@@ -414,10 +409,16 @@ int32_t EventHub::getScanCodeState(int32_t deviceId, int32_t scanCode) const {
             }
         }
     }
+#endif
+
     return AKEY_STATE_UNKNOWN;
 }
 
 int32_t EventHub::getKeyCodeState(int32_t deviceId, int32_t keyCode) const {
+    (void) deviceId;
+    (void) keyCode;
+
+#if 0
     AutoMutex _l(mLock);
 
     Device* device = getDeviceLocked(deviceId);
@@ -438,10 +439,16 @@ int32_t EventHub::getKeyCodeState(int32_t deviceId, int32_t keyCode) const {
             }
         }
     }
+#endif
+
     return AKEY_STATE_UNKNOWN;
 }
 
 int32_t EventHub::getSwitchState(int32_t deviceId, int32_t sw) const {
+    (void) deviceId;
+    (void) sw;
+
+#if 0
     if (sw >= 0 && sw <= SW_MAX) {
         AutoMutex _l(mLock);
 
@@ -454,12 +461,18 @@ int32_t EventHub::getSwitchState(int32_t deviceId, int32_t sw) const {
             }
         }
     }
+#endif
+
     return AKEY_STATE_UNKNOWN;
 }
 
 status_t EventHub::getAbsoluteAxisValue(int32_t deviceId, int32_t axis, int32_t* outValue) const {
+    (void) deviceId;
+    (void) axis;
+
     *outValue = 0;
 
+#if 0
     if (axis >= 0 && axis <= ABS_MAX) {
         AutoMutex _l(mLock);
 
@@ -476,6 +489,8 @@ status_t EventHub::getAbsoluteAxisValue(int32_t deviceId, int32_t axis, int32_t*
             return OK;
         }
     }
+#endif
+
     return -1;
 }
 
@@ -599,6 +614,11 @@ void EventHub::setLedState(int32_t deviceId, int32_t led, bool on) {
 }
 
 void EventHub::setLedStateLocked(Device* device, int32_t led, bool on) {
+    (void) device;
+    (void) led;
+    (void) on;
+
+#if 0
     int32_t sc;
     if (device && device->hasValidFd() && mapLed(device, led, &sc) != NAME_NOT_FOUND) {
         struct input_event ev;
@@ -613,6 +633,7 @@ void EventHub::setLedStateLocked(Device* device, int32_t led, bool on) {
             nWrite = write(device->fd, &ev, sizeof(struct input_event));
         } while (nWrite == -1 && errno == EINTR);
     }
+#endif
 }
 
 void EventHub::getVirtualKeyDefinitions(int32_t deviceId,
@@ -704,6 +725,10 @@ void EventHub::assignDescriptorLocked(InputDeviceIdentifier& identifier) {
 }
 
 void EventHub::vibrate(int32_t deviceId, nsecs_t duration) {
+    (void) deviceId;
+    (void) duration;
+
+#if 0
     AutoMutex _l(mLock);
     Device* device = getDeviceLocked(deviceId);
     if (device && device->hasValidFd()) {
@@ -735,9 +760,13 @@ void EventHub::vibrate(int32_t deviceId, nsecs_t duration) {
         }
         device->ffEffectPlaying = true;
     }
+#endif
 }
 
 void EventHub::cancelVibrate(int32_t deviceId) {
+    (void) deviceId;
+
+#if 0
     AutoMutex _l(mLock);
     Device* device = getDeviceLocked(deviceId);
     if (device && device->hasValidFd()) {
@@ -757,6 +786,7 @@ void EventHub::cancelVibrate(int32_t deviceId) {
             }
         }
     }
+#endif
 }
 
 EventHub::Device* EventHub::getDeviceByDescriptorLocked(const std::string& descriptor) const {
@@ -1117,6 +1147,7 @@ static const int32_t GAMEPAD_KEYCODES[] = {
         AKEYCODE_BUTTON_START, AKEYCODE_BUTTON_SELECT, AKEYCODE_BUTTON_MODE,
 };
 
+<<<<<<< HEAD
 status_t EventHub::registerFdForEpoll(int fd) {
     // TODO(b/121395353) - consider adding EPOLLRDHUP
     struct epoll_event eventItem = {};
@@ -1187,25 +1218,72 @@ void EventHub::unregisterVideoDeviceFromEpollLocked(const TouchVideoDevice& vide
 }
 
 status_t EventHub::openDeviceLocked(const char* devicePath) {
+=======
+struct DeviceInfo {
+    char name[80];
+    int driver_version;
+    struct input_id id;
+    char physical_location[80];
+    char unique_id[80];
+    uint8_t key_bitmask[(KEY_MAX + 1) / 8];
+    uint8_t abs_bitmask[(ABS_MAX + 1) / 8];
+    uint8_t rel_bitmask[(REL_MAX + 1) / 8];
+    uint8_t sw_bitmask[(SW_MAX + 1) / 8];
+    uint8_t led_bitmask[(LED_MAX + 1) / 8];
+    uint8_t ff_bitmask[(FF_MAX + 1) / 8];
+    uint8_t prop_bitmask[(INPUT_PROP_MAX + 1) / 8];
+    uint32_t abs_max[ABS_CNT];
+    uint32_t abs_min[ABS_CNT];
+};
+
+status_t EventHub::openDeviceLocked(const char *devicePath) {
+>>>>>>> 80d6b8ffb... Rework input device handling to support sockets created by anbox
     char buffer[80];
 
-    ALOGV("Opening device: %s", devicePath);
+    ALOGI("Opening device: %s", devicePath);
 
+    struct sockaddr_un addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+    strncpy(addr.sun_path, devicePath, sizeof(addr.sun_path));
+
+<<<<<<< HEAD
     int fd = open(devicePath, O_RDWR | O_CLOEXEC | O_NONBLOCK);
+=======
+    int fd = socket(AF_LOCAL, SOCK_STREAM, 0);
+>>>>>>> 80d6b8ffb... Rework input device handling to support sockets created by anbox
     if(fd < 0) {
-        ALOGE("could not open %s, %s\n", devicePath, strerror(errno));
+        ALOGE("Failed to create local socket: %s", strerror(errno));
         return -1;
     }
 
-    InputDeviceIdentifier identifier;
+    if (connect(fd, (struct sockaddr*) &addr, sizeof(addr)) < 0) {
+        ALOGE("Failed to connect to input device socket: %s", strerror(errno));
+        close(fd);
+        return -1;
+    }
 
+<<<<<<< HEAD
     // Get device name.
     if(ioctl(fd, EVIOCGNAME(sizeof(buffer) - 1), &buffer) < 1) {
         ALOGE("Could not get device name for %s: %s", devicePath, strerror(errno));
     } else {
         buffer[sizeof(buffer) - 1] = '\0';
         identifier.name = buffer;
+=======
+    DeviceInfo device_info;
+    memset(&device_info, 0, sizeof(device_info));
+    size_t bytes_read = read(fd, &device_info, sizeof(device_info));
+    if (bytes_read <= 0) {
+        ALOGE("failed to read device info from input device: %s", strerror(errno));
+        close(fd);
+        return -1;
+>>>>>>> 80d6b8ffb... Rework input device handling to support sockets created by anbox
     }
+
+    InputDeviceIdentifier identifier;
+
+    identifier.name.setTo(device_info.name);
 
     // Check to see if the device is on our excluded list
     for (size_t i = 0; i < mExcludedDevices.size(); i++) {
@@ -1217,6 +1295,7 @@ status_t EventHub::openDeviceLocked(const char* devicePath) {
         }
     }
 
+<<<<<<< HEAD
     // Get device driver version.
     int driverVersion;
     if(ioctl(fd, EVIOCGVERSION, &driverVersion)) {
@@ -1252,6 +1331,14 @@ status_t EventHub::openDeviceLocked(const char* devicePath) {
         buffer[sizeof(buffer) - 1] = '\0';
         identifier.uniqueId = buffer;
     }
+=======
+    identifier.bus = device_info.id.bustype;
+    identifier.product = device_info.id.product;
+    identifier.vendor = device_info.id.vendor;
+    identifier.version = device_info.id.version;
+    identifier.location.setTo(device_info.physical_location);
+    identifier.uniqueId.setTo(device_info.unique_id);
+>>>>>>> 80d6b8ffb... Rework input device handling to support sockets created by anbox
 
     // Fill in the descriptor.
     assignDescriptorLocked(identifier);
@@ -1271,19 +1358,22 @@ status_t EventHub::openDeviceLocked(const char* devicePath) {
     ALOGV("  unique id:  \"%s\"\n", identifier.uniqueId.c_str());
     ALOGV("  descriptor: \"%s\"\n", identifier.descriptor.c_str());
     ALOGV("  driver:     v%d.%d.%d\n",
-        driverVersion >> 16, (driverVersion >> 8) & 0xff, driverVersion & 0xff);
+        device_info.driver_version >> 16, (device_info.driver_version >> 8) & 0xff, device_info.driver_version & 0xff);
 
     // Load the configuration file for the device.
     loadConfigurationLocked(device);
 
     // Figure out the kinds of events the device reports.
-    ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(device->keyBitmask)), device->keyBitmask);
-    ioctl(fd, EVIOCGBIT(EV_ABS, sizeof(device->absBitmask)), device->absBitmask);
-    ioctl(fd, EVIOCGBIT(EV_REL, sizeof(device->relBitmask)), device->relBitmask);
-    ioctl(fd, EVIOCGBIT(EV_SW, sizeof(device->swBitmask)), device->swBitmask);
-    ioctl(fd, EVIOCGBIT(EV_LED, sizeof(device->ledBitmask)), device->ledBitmask);
-    ioctl(fd, EVIOCGBIT(EV_FF, sizeof(device->ffBitmask)), device->ffBitmask);
-    ioctl(fd, EVIOCGPROP(sizeof(device->propBitmask)), device->propBitmask);
+    memcpy(device->keyBitmask, device_info.key_bitmask, sizeof(device->keyBitmask));
+    memcpy(device->absBitmask, device_info.abs_bitmask, sizeof(device->absBitmask));
+    memcpy(device->relBitmask, device_info.rel_bitmask, sizeof(device->relBitmask));
+    memcpy(device->swBitmask, device_info.sw_bitmask, sizeof(device->swBitmask));
+    memcpy(device->ledBitmask, device_info.led_bitmask, sizeof(device->ledBitmask));
+    memcpy(device->ffBitmask, device_info.ff_bitmask, sizeof(device->ffBitmask));
+    memcpy(device->propBitmask, device_info.prop_bitmask, sizeof(device->propBitmask));
+
+    memcpy(device->abs_min, device_info.abs_min, sizeof(device->abs_min));
+    memcpy(device->abs_max, device_info.abs_max, sizeof(device->abs_max));
 
     // See if this is a keyboard.  Ignore everything in the button range except for
     // joystick and gamepad buttons which are handled like keyboards for the most part.
@@ -1461,6 +1551,7 @@ status_t EventHub::openDeviceLocked(const char* devicePath) {
         return -1;
     }
 
+<<<<<<< HEAD
     configureFd(device);
 
     ALOGI("New device: id=%d, fd=%d, path='%s', name='%s', classes=0x%x, "
@@ -1528,6 +1619,16 @@ void EventHub::openVideoDeviceLocked(const std::string& devicePath) {
             return;
         }
     }
+=======
+    ALOGI("New device: id=%d, fd=%d, path='%s', name='%s', classes=0x%x, "
+            "configuration='%s', keyLayout='%s', keyCharacterMap='%s', builtinKeyboard=%s",
+         deviceId, fd, devicePath, device->identifier.name.string(),
+         device->classes,
+         device->configurationFile.string(),
+         device->keyMap.keyLayoutFile.string(),
+         device->keyMap.keyCharacterMapFile.string(),
+         toString(mBuiltInKeyboardId == deviceId));
+>>>>>>> 80d6b8ffb... Rework input device handling to support sockets created by anbox
 
     // Couldn't find a matching input device, so just add it to a temporary holding queue.
     // A matching input device may appear later.
