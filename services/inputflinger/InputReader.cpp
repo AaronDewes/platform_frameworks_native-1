@@ -2823,9 +2823,11 @@ void CursorInputMapper::sync(nsecs_t when) {
                     PointerControllerInterface::PRESENTATION_POINTER);
 #endif
 
+#if 0
             if (moved) {
                 mPointerController->move(deltaX, deltaY);
             }
+#endif
 
             if (buttonsChanged) {
                 mPointerController->setButtonState(currentButtonState);
